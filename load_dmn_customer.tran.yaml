@@ -1,0 +1,136 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    rds_src_customers:
+      type: "table-input"
+      parameters:
+        componentName: "rds_src_customers"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "rds_source_customer"
+        columnNames:
+        - "rid"
+        - "first_name"
+        - "last_name"
+        timeOffset:
+    s3_src_customer_accounts:
+      type: "table-input"
+      parameters:
+        componentName: "s3_src_customer_accounts"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "s3_src_customer_accounts"
+        columnNames:
+        - "DataValue"
+        timeOffset:
+    Extract Nested Data:
+      type: "extract-nested-data-sf"
+      sources:
+      - "s3_src_customer_accounts"
+      parameters:
+        componentName: "Extract Nested Data"
+        includeInputColumns: "No"
+        columns:
+        - name: "data"
+          datatype: "VARIANT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "DataValue"
+          aliasName: "data"
+          isArray: "true"
+          include: "false"
+          childElements:
+          - name: "data-element"
+            datatype: "VARIANT"
+            size: "0"
+            decimalPlaces: "0"
+            columnName: "DataValue"
+            aliasName: "data-element"
+            isArray: "false"
+            include: "false"
+            childElements:
+            - name: "customer_rid"
+              datatype: "NUMBER"
+              size: "10"
+              decimalPlaces: "0"
+              columnName: "DataValue"
+              aliasName: "customer_rid"
+              isArray: "false"
+              include: "true"
+            - name: "account_name"
+              datatype: "VARCHAR"
+              size: "50"
+              decimalPlaces: "0"
+              columnName: "DataValue"
+              aliasName: "account_name"
+              isArray: "false"
+              include: "true"
+        outerJoin: "No"
+        inputAlias: "i"
+        arrayPrefix: "f"
+        castingMethod: "Fail on invalid data"
+        caseColumnAliasNames: "No"
+    Join:
+      type: "join"
+      sources:
+      - "rds_src_customers"
+      - "Extract Nested Data"
+      parameters:
+        componentName: "Join"
+        mainTable: "rds_src_customers"
+        mainTableAlias: "main"
+        joins:
+        - - "Extract Nested Data"
+          - "account"
+          - "Left"
+        joinExpressions:
+        - - "\"main\".\"rid\"=\"account\".\"customer_rid\""
+          - "main_Left_account"
+        columnMappings:
+        - - "main.rid"
+          - "customer_rid"
+        - - "main.first_name"
+          - "first_name"
+        - - "main.last_name"
+          - "last_name"
+        - - "account.account_name"
+          - "account_name"
+    dmn_customer:
+      type: "rewrite-table"
+      sources:
+      - "Join"
+      parameters:
+        componentName: "dmn_customer"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DB_DWH"
+        targetTable: "dmn_customer"
+        orderBy:
+design:
+  components:
+    rds_src_customers:
+      position:
+        x: 750
+        "y": 230
+      tempMetlId: 1
+    s3_src_customer_accounts:
+      position:
+        x: 740
+        "y": 370
+      tempMetlId: 2
+    Extract Nested Data:
+      position:
+        x: 860
+        "y": 370
+      tempMetlId: 3
+    Join:
+      position:
+        x: 1000
+        "y": 280
+      tempMetlId: 4
+    dmn_customer:
+      position:
+        x: 1110
+        "y": 280
+      tempMetlId: 5
