@@ -1,0 +1,49 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start:
+      type: "start"
+      transitions:
+        unconditional:
+        - "create views"
+      parameters:
+        componentName: "Start"
+    create views:
+      type: "sql-script"
+      parameters:
+        componentName: "create views"
+        sqlScript: "/*CHANGE:\r\nREPLACE \"database_name\" with your database name\r\
+          \nREPLACE \"source_schema_name\" with your source schema name\r\n*/\r\n\
+          CREATE OR REPLACE VIEW \"TEST_DB\".\"TEST_MATILLION\".\"vew_orders_2020\"\
+          \r\nAS\r\nselect \"rid\",\r\n  \"customer_rid\",\r\n  \"order_date\"\r\n\
+          from \"TEST_DB\".\"TEST_MATILLION\".\"s3_src_orders\"\r\nwhere date_part(year,\
+          \ \"order_date\") = 2020;\r\n\r\n\r\n/*CHANGE:\r\nREPLACE \"database_name\"\
+          \ with your database name\r\nREPLACE \"source_schema_name\" with your source\
+          \ schema name\r\n*/\r\nCREATE OR REPLACE VIEW \"TEST_DB\".\"TEST_MATILLION\"\
+          .\"vew_orders_2021\"\r\nAS\r\nselect \"rid\",\r\n  \"customer_rid\",\r\n\
+          \  \"order_date\"\r\nfrom \"TEST_DB\".\"TEST_MATILLION\".\"s3_src_orders\"\
+          \r\nwhere date_part(year, \"order_date\") = 2021;\r\n\r\n/*CHANGE:\r\nREPLACE\
+          \ \"database_name\" with your database name\r\nREPLACE \"source_schema_name\"\
+          \ with your source schema name\r\n*/\r\nCREATE OR REPLACE VIEW \"TEST_DB\"\
+          .\"TEST_MATILLION\".\"vew_orders_2022\"\r\nAS\r\nselect \"rid\",\r\n  \"\
+          customer_rid\",\r\n  \"order_date\"\r\nfrom \"TEST_DB\".\"TEST_MATILLION\"\
+          .\"s3_src_orders\"\r\nwhere date_part(year, \"order_date\") = 2022;\r\n\r\
+          \n/*CHANGE:\r\nREPLACE \"database_name\" with your database name\r\nREPLACE\
+          \ \"source_schema_name\" with your source schema name\r\n*/\r\nCREATE OR\
+          \ REPLACE VIEW \"TEST_DB\".\"TEST_MATILLION\".\"vew_orders_2023\"\r\nAS\r\
+          \nselect \"rid\",\r\n  \"customer_rid\",\r\n  \"order_date\"\r\nfrom \"\
+          TEST_DB\".\"TEST_MATILLION\".\"s3_src_orders\"\r\nwhere date_part(year,\
+          \ \"order_date\") = 2023;\r\n"
+design:
+  components:
+    Start:
+      position:
+        x: 0
+        "y": 0
+      tempMetlId: 1
+    create views:
+      position:
+        x: 120
+        "y": 0
+      tempMetlId: 2

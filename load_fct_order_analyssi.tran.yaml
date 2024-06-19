@@ -1,0 +1,227 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    Multi Table Input:
+      type: "multi-table-input"
+      parameters:
+        componentName: "Multi Table Input"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        patternType: "Like"
+        pattern: "vew_orders_20%"
+        castTypes: "No"
+        addSourceTable: "No"
+        columns:
+        - "order_date"
+        - "customer_rid"
+        - "rid"
+    rds_src_orders_items:
+      type: "table-input"
+      parameters:
+        componentName: "rds_src_orders_items"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "rds_source_order_items"
+        columnNames:
+        - "rid"
+        - "order_rid"
+        - "item_rid"
+        - "quantity"
+        timeOffset:
+    scripts_src_items:
+      type: "table-input"
+      parameters:
+        componentName: "scripts_src_items"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "script_src_items"
+        columnNames:
+        - "rid"
+        - "name"
+        - "cost"
+        timeOffset:
+    Join:
+      type: "join"
+      sources:
+      - "Multi Table Input"
+      - "rds_src_orders_items"
+      - "scripts_src_items"
+      parameters:
+        componentName: "Join"
+        mainTable: "Multi Table Input"
+        mainTableAlias: "main"
+        joins:
+        - - "rds_src_orders_items"
+          - "orders_items"
+          - "Left"
+        - - "scripts_src_items"
+          - "items"
+          - "Left"
+        joinExpressions:
+        - - "\"main\".\"rid\"=\"orders_items\".\"item_rid\""
+          - "main_Left_orders_items"
+        - - "\"main\".\"rid\"=\"items\".\"rid\""
+          - "main_Left_items"
+        columnMappings:
+        - - "main.order_date"
+          - "order_date"
+        - - "main.customer_rid"
+          - "customer_rid"
+        - - "main.rid"
+          - "order_rid"
+        - - "orders_items.item_rid"
+          - "item_rid"
+        - - "orders_items.quantity"
+          - "quantity"
+        - - "items.cost"
+          - "item_cost"
+    Rank hights quantity:
+      type: "rank"
+      sources:
+      - "Join"
+      parameters:
+        componentName: "Rank hights quantity"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "customer_rid"
+        orderingWithinPartitions:
+        - - "quantity"
+          - "Descending"
+        functions:
+        - - "Rank"
+          - "highhest_quantity_rank"
+    Calculator:
+      type: "calculator"
+      sources:
+      - "Join"
+      parameters:
+        componentName: "Calculator"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "\"quantity\"*\"item_cost\""
+          - "total_cost"
+    Convert Type:
+      type: "convert-type"
+      sources:
+      - "Calculator"
+      parameters:
+        componentName: "Convert Type"
+        conversions:
+        - - "order_date"
+          - "DATE"
+          - ""
+          - ""
+    fct_order_analysis:
+      type: "rewrite-table"
+      sources:
+      - "Convert Type"
+      parameters:
+        componentName: "fct_order_analysis"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "fct_order_analysis"
+        orderBy:
+    get_order_year_month:
+      type: "calculator"
+      sources:
+      - "Convert Type"
+      parameters:
+        componentName: "get_order_year_month"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "DATE_PART(year, \"order_date\")"
+          - "order_year"
+        - - "DATE_PART(month, \"order_date\")"
+          - "order_month"
+    total_sales_by_year_month:
+      type: "aggregate"
+      sources:
+      - "get_order_year_month"
+      parameters:
+        componentName: "total_sales_by_year_month"
+        groupings:
+        - "order_year"
+        - "order_month"
+        aggregations:
+        - - "item_cost"
+          - "Sum"
+        groupingType: "Group By"
+    cat_order_summary:
+      type: "table-output"
+      sources:
+      - "total_sales_by_year_month"
+      parameters:
+        componentName: "cat_order_summary"
+        warehouse: "[Environment Default]"
+        database: "TEST_DB"
+        schema: "${pro_dwh_schema_name}"
+        targetTable: "fct_order_analysis_summary"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "sum_item_cost"
+          - "year"
+        - - "order_year"
+          - "month"
+        - - "order_month"
+          - "revenue"
+        orderBy:
+        outputMode: "Truncate"
+design:
+  components:
+    Multi Table Input:
+      position:
+        x: 270
+        "y": 200
+      tempMetlId: 6
+    rds_src_orders_items:
+      position:
+        x: 270
+        "y": 310
+      tempMetlId: 7
+    scripts_src_items:
+      position:
+        x: 270
+        "y": 450
+      tempMetlId: 8
+    Join:
+      position:
+        x: 500
+        "y": 320
+      tempMetlId: 9
+    Rank hights quantity:
+      position:
+        x: 630
+        "y": 440
+      tempMetlId: 10
+    Calculator:
+      position:
+        x: 750
+        "y": 320
+      tempMetlId: 11
+    Convert Type:
+      position:
+        x: 910
+        "y": 320
+      tempMetlId: 12
+    fct_order_analysis:
+      position:
+        x: 1060
+        "y": 320
+      tempMetlId: 13
+    get_order_year_month:
+      position:
+        x: 1060
+        "y": 450
+      tempMetlId: 14
+    total_sales_by_year_month:
+      position:
+        x: 1240
+        "y": 450
+      tempMetlId: 15
+    cat_order_summary:
+      position:
+        x: 1410
+        "y": 450
+      tempMetlId: 16
