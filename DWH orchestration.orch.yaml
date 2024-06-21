@@ -252,16 +252,6 @@ design:
       tempMetlId: 10
     End Success:
       position:
-        x: 860
-        "y": 80
+        x: 590
+        "y": 60
       tempMetlId: 13
-  notes:
-    "1":
-      position:
-        x: 560
-        "y": -30
-      size:
-        height: 298
-        width: 610
-      theme: "white"
-      content: "to send msg to aws sqs queue"
