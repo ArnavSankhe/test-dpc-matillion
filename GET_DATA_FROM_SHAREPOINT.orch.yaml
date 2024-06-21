@@ -14,8 +14,10 @@ pipeline:
       parameters:
         componentName: "Sharepoint Query"
         basicAdvancedMode: "Basic"
-        serviceType: "REST"
-        authentication: "MOTORPOINT_TEST"
+        serviceType: "SOAP"
+        user:
+        password:
+        url:
         sharePointEdition: "SharePoint Online"
         connectionOptions:
         dataSource: "Europe"

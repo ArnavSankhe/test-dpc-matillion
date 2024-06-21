@@ -1,0 +1,351 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    Generate date_Sequence:
+      type: "generate-sequence"
+      parameters:
+        componentName: "Generate date_Sequence"
+        startValue: "0"
+        incrementValue: "1"
+        endValue: "${pip_max_records}"
+        outputColumn: "sequence"
+    Calculator:
+      type: "calculator"
+      sources:
+      - "Generate date_Sequence"
+      parameters:
+        componentName: "Calculator"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "CAST(${pip_start_date} as date)"
+          - "starting_date"
+        - - "\"starting_date\" + \"sequence\""
+          - "calendar_date"
+        - - "DATE_PART(year,\"calendar_date\")"
+          - "calendar_year"
+        - - "DATE_PART(mm,\"calendar_date\")"
+          - "calendar_month"
+        - - "DATE_PART(week,\"calendar_date\")"
+          - "calendar_week"
+        - - "DATE_PART(day,\"calendar_date\")"
+          - "calendar_day"
+    Calculator 2:
+      type: "calculator"
+      sources:
+      - "Calculator"
+      parameters:
+        componentName: "Calculator 2"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "DATEDIFF(years, CURRENT_DATE, \"calendar_date\")"
+          - "relative_year"
+        - - "DATEDIFF(months, CURRENT_DATE, \"calendar_date\")"
+          - "relative_month"
+        - - "DATEDIFF(days, CURRENT_DATE, \"calendar_date\")"
+          - "relative_day"
+    add_month_names:
+      type: "map-values"
+      sources:
+      - "Calculator 2"
+      parameters:
+        componentName: "add_month_names"
+        valueMap:
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "1"
+          - "January"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "2"
+          - "February"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "3"
+          - "March"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "4"
+          - "April"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "5"
+          - "May"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "6"
+          - "June"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "7"
+          - "July"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "8"
+          - "August"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "9"
+          - "September"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "10"
+          - "October"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "11"
+          - "November"
+        - - "calendar_month"
+          - "Is"
+          - "Equal to"
+          - "12"
+          - "December"
+        columnName: "month_name"
+        other: "Null"
+    script_src_date_day_lookup:
+      type: "table-input"
+      parameters:
+        componentName: "script_src_date_day_lookup"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "script_src_date_day_lookup"
+        columnNames:
+        - "year"
+        - "sunday"
+        - "monday"
+        - "tuesday"
+        - "wednesday"
+        - "thursday"
+        - "friday"
+        - "saturday"
+        timeOffset:
+    Transpose Columns:
+      type: "transpose-columns"
+      sources:
+      - "script_src_date_day_lookup"
+      parameters:
+        componentName: "Transpose Columns"
+        ordinaryColumns:
+        - "year"
+        rowLabelName: "day_name"
+        outputColumns:
+        - - "date"
+          - "VARCHAR"
+        columnToRowMapping:
+        - - "Sunday"
+          - "sunday"
+        - - "Monday"
+          - "monday"
+        - - "Tuesday"
+          - "tuesday"
+        - - "Wednesday"
+          - "wednesday"
+        - - "Thursday"
+          - "thursday"
+        - - "Friday"
+          - "friday"
+        - - "Saturday"
+          - "saturday"
+    Convert Type:
+      type: "convert-type"
+      sources:
+      - "Transpose Columns"
+      parameters:
+        componentName: "Convert Type"
+        conversions:
+        - - "date"
+          - "DATE"
+          - ""
+          - ""
+    Join:
+      type: "join"
+      sources:
+      - "Convert Type"
+      - "add_month_names"
+      parameters:
+        componentName: "Join"
+        mainTable: "add_month_names"
+        mainTableAlias: "mian"
+        joins:
+        - - "Convert Type"
+          - "days"
+          - "Left"
+        joinExpressions:
+        - - "\"mian\".\"calendar_date\"=\"days\".\"date\""
+          - "mian_Left_days"
+        columnMappings:
+        - - "days.year"
+          - "year"
+        - - "days.day_name"
+          - "day_name"
+        - - "mian.sequence"
+          - "sequence"
+        - - "mian.starting_date"
+          - "starting_date"
+        - - "mian.calendar_date"
+          - "calendar_date"
+        - - "mian.calendar_year"
+          - "calendar_year"
+        - - "mian.calendar_month"
+          - "calendar_month"
+        - - "mian.calendar_week"
+          - "calendar_week"
+        - - "mian.calendar_day"
+          - "calendar_day"
+        - - "mian.relative_year"
+          - "relative_year"
+        - - "mian.relative_month"
+          - "relative_month"
+        - - "mian.relative_day"
+          - "relative_day"
+        - - "mian.month_name"
+          - "month_name"
+    Window Calculation:
+      type: "window-calculation"
+      sources:
+      - "Join"
+      parameters:
+        componentName: "Window Calculation"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "calendar_year"
+        - "calendar_month"
+        orderingWithinPartitions:
+        - - "calendar_date"
+          - "Ascending"
+        functions:
+        - - "Count"
+          - "calendar_date"
+          - "Days_in_months"
+        lowerBound: "unbounded preceding"
+        upperBound: "unbounded following"
+    Rename:
+      type: "rename"
+      sources:
+      - "Window Calculation"
+      parameters:
+        componentName: "Rename"
+        columnMapping:
+        - - "year"
+          - "year"
+        - - "day_name"
+          - "day_name"
+        - - "sequence"
+          - "sequence"
+        - - "starting_date"
+          - "starting_date"
+        - - "calendar_date"
+          - "calendar_date"
+        - - "calendar_year"
+          - "calendar_year"
+        - - "calendar_month"
+          - "calendar_month"
+        - - "calendar_week"
+          - "calendar_week"
+        - - "calendar_day"
+          - "calendar_day"
+        - - "relative_year"
+          - "relative_year"
+        - - "relative_month"
+          - "relative_month"
+        - - "relative_day"
+          - "relative_day"
+        - - "month_name"
+          - "month_name"
+        - - "Days_in_months"
+          - "Days_in_months"
+        includeInputColumns: "No"
+    Rewrite Table:
+      type: "rewrite-table"
+      sources:
+      - "Rename"
+      parameters:
+        componentName: "Rewrite Table"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "dmn_date"
+        orderBy:
+  variables:
+    pip_start_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PRIVATE"
+      defaultValue: "'2020-01-01'"
+    pip_max_records:
+      metadata:
+        type: "NUMBER"
+        description: ""
+        scope: "COPIED"
+        visibility: "PRIVATE"
+      defaultValue: "3000"
+design:
+  components:
+    Generate date_Sequence:
+      position:
+        x: 930
+        "y": 350
+      tempMetlId: 1
+    Calculator:
+      position:
+        x: 1050
+        "y": 350
+      tempMetlId: 2
+    Calculator 2:
+      position:
+        x: 1170
+        "y": 350
+      tempMetlId: 3
+    add_month_names:
+      position:
+        x: 1280
+        "y": 350
+      tempMetlId: 4
+    script_src_date_day_lookup:
+      position:
+        x: 1170
+        "y": 450
+      tempMetlId: 5
+    Transpose Columns:
+      position:
+        x: 1280
+        "y": 450
+      tempMetlId: 6
+    Convert Type:
+      position:
+        x: 1400
+        "y": 450
+      tempMetlId: 7
+    Join:
+      position:
+        x: 1540
+        "y": 390
+      tempMetlId: 8
+    Window Calculation:
+      position:
+        x: 1650
+        "y": 390
+      tempMetlId: 9
+    Rename:
+      position:
+        x: 1760
+        "y": 390
+      tempMetlId: 10
+    Rewrite Table:
+      position:
+        x: 1870
+        "y": 390
+      tempMetlId: 11
