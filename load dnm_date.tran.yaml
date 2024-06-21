@@ -173,6 +173,7 @@ pipeline:
       sources:
       - "Convert Type"
       - "add_month_names"
+      - "SQL"
       parameters:
         componentName: "Join"
         mainTable: "add_month_names"
@@ -181,9 +182,14 @@ pipeline:
         - - "Convert Type"
           - "days"
           - "Left"
+        - - "SQL"
+          - "holiday"
+          - "Left"
         joinExpressions:
         - - "\"mian\".\"calendar_date\"=\"days\".\"date\""
           - "mian_Left_days"
+        - - "\"mian\".\"calendar_date\"=\"holiday\".\"Date\""
+          - "mian_Left_holiday"
         columnMappings:
         - - "days.year"
           - "year"
@@ -211,6 +217,10 @@ pipeline:
           - "relative_day"
         - - "mian.month_name"
           - "month_name"
+        - - "holiday.Date"
+          - "Date"
+        - - "holiday.Holiday Name"
+          - "Holiday Name"
     Window Calculation:
       type: "window-calculation"
       sources:
@@ -263,6 +273,10 @@ pipeline:
           - "relative_day"
         - - "month_name"
           - "month_name"
+        - - "Date"
+          - "Date"
+        - - "Holiday Name"
+          - "Holiday Name"
         - - "Days_in_months"
           - "Days_in_months"
         includeInputColumns: "No"
@@ -277,6 +291,11 @@ pipeline:
         schema: "[Environment Default]"
         targetTable: "dmn_date"
         orderBy:
+    SQL:
+      type: "sql"
+      parameters:
+        componentName: "SQL"
+        query: "SELECT \"Date\", \"Holiday Name\" FROM TEST_DB.TEST_MATILLION.\"training_uk_holidays\""
   variables:
     pip_start_date:
       metadata:
@@ -349,3 +368,8 @@ design:
         x: 1870
         "y": 390
       tempMetlId: 11
+    SQL:
+      position:
+        x: 1400
+        "y": 580
+      tempMetlId: 12
